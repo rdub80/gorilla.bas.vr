@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QBASIC Gorillas VR</title>
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <script src="https://aframe.io/releases/0.8.2/aframe.min.js"></script>
+  <!--build:js js/main.min.js -->
+  <script src="js/main.js"></script>
+  <!-- endbuild -->  
+</head>
+<body>
+  <a-scene>
+<!-- 
+    <a-entity arena></a-entity> 
+    -->
+
+    <a-entity gorilla position="0 0 0"></a-entity>
+    <a-entity banana position="0 0 2  "></a-entity>
+
+
+<!--     <a-plane position="0 0 -4" rotation="-90 0 0" width="100" height="100" color="#555" shadow></a-plane>
+ -->    
+      <a-sky color="#0000ff"></a-sky>
+
+
+    <a-entity id="cameraRig" position="0 40 40">
+      <a-camera look-controls wasd-controls position="0 0 0"> <!-- look-controls="pointerLockEnabled:true" wasd-controls="enabled:false" -->
+        <a-cursor></a-cursor>
+      </a-camera>
+    </a-entity>
+
+  </a-scene>  
+
+</body>
+</html>
