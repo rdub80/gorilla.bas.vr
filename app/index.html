@@ -13,19 +13,21 @@
   <a-scene>
 <!-- -->
     <a-entity arena></a-entity> 
-    <a-entity gorilla="player" position="0 20 -30" shadow></a-entity>
+    <a-entity id="enemy" gorilla="player" position="0 20 -30" shadow></a-entity>
     <a-entity banana position="0 20 -28"></a-entity>
+
+    
+    <a-entity id="me" position="0 20 0">
+      <a-entity gorilla rotation="0 180 0" shadow></a-entity>
+      <a-camera id="playerCam" look-controls="pointerLockEnabled:true" wasd-controls="enabled:false"  position="0 3 0"></a-camera>
+    </a-entity>
 
     <a-plane position="0 0 -4" rotation="-90 0 0" width="100" height="100" color="#555" shadow></a-plane>
     <a-sky color="#0000ff"></a-sky>
 
-
-    <a-entity id="cameraRig" position="0 40 40">
-      <a-camera look-controls wasd-controls position="0 0 0"> <!-- look-controls="pointerLockEnabled:true" wasd-controls="enabled:false" -->
-        <a-cursor></a-cursor>
-      </a-camera>
-    </a-entity>
-
+    <a-camera id="overviewCam" look-controls="pointerLockEnabled:true" wasd-controls="enabled:false" position="0 50 40"> 
+    </a-camera>
+    
   </a-scene>  
 
 </body>

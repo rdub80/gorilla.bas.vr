@@ -5,14 +5,8 @@ if (typeof AFRAME === 'undefined') {
 
 /* ColorObj */
 var colorObj = {black: '#000', white: '#fff',yellow: '#ff0',skin: '#fa5',blue: '#00b', grey: '#555'};
-
 // light: '#aaa' cyan: '#0aa' marroon: '#a00'
-var buildingColors = ["#aaa", "#0aa", "#a00"];
-var pickAColor = function () {
-	return buildingColors[Math.floor(Math.random() * 3)];
-};
-
-var playerPosition = [];
+var buildingColors = ["#aaa", "#0aa", "#a00"], playerPosition = [], myPosition = [];
 
 AFRAME.registerComponent('arena', {
 	init: function () {
@@ -21,7 +15,7 @@ AFRAME.registerComponent('arena', {
 		var arenaDepth = 10;
 		var arenaWidth = 10;
 
-		targetEl.setAttribute('position', `-${(arenaDepth/2)*10	} 0 -${(arenaWidth/2)*10}`);
+		targetEl.setAttribute('position', `-${(arenaWidth/2)*10	} 0 -${(arenaDepth/2)*10}`);
 
 		for(i = 0; i < arenaDepth; i++)
 		{    
@@ -30,12 +24,12 @@ AFRAME.registerComponent('arena', {
 				var buildingWidth = Math.floor(Math.random() * 5) + 5;
 				var buildingDepth = Math.floor(Math.random() * 5) + 5;
 				var buildingHeight = Math.floor(Math.random() * 10) + 15;
-				var buildingColor = pickAColor();
+				var buildingColor = buildingColors[Math.floor(Math.random() * 3)];
 
-                if(i < 4){
-                    console.log(i + "-row " + j + "-id " + buildingHeight + " height " + buildingColor + " color ");
-                    playerPosition.push({ xPos: i, zPos: j, yPos: buildingHeight});
-                }
+                var _x = (j*10) - (arenaWidth/2)*10;
+                var _z = (i*10) - (arenaDepth/2)*10;
+                if(i < 4){ playerPosition.push({ xPos: _x, zPos: _z, yPos: buildingHeight}) }
+                if(i > 6){ myPosition.push({ xPos: _x, zPos: _z, yPos: buildingHeight}) }
 
 		        var building = document.createElement("a-entity");
 		        building.setAttribute('geometry', `primitive: box; width: ${buildingWidth}; height: ${buildingHeight}; depth: ${buildingDepth};`);
@@ -44,7 +38,7 @@ AFRAME.registerComponent('arena', {
 		        targetEl.appendChild(building);
 		     }
 		}
-        setStartPosition();
+        setStartPositions();
 	}
 });
 
@@ -85,7 +79,7 @@ AFRAME.registerComponent('banana', {
 
 
 AFRAME.registerComponent('gorilla', {
-    schema: {type: 'string', default: 'computer'},
+    schema: {type: 'string', default: ''},
     init: function () {
         var data = this.data;
         var targetEl = this.el;  
@@ -152,14 +146,15 @@ AFRAME.registerComponent('gorilla', {
         righthand.setAttribute('position', `1 -0.133 0`);
         right.appendChild(righthand);
 
-        var playerName = document.createElement("a-entity");
-        playerName.setAttribute('geometry', `primitive: plane; width: 10; height: 3`);
-        playerName.setAttribute('material', `color: ${colorObj.white}`);
-        playerName.setAttribute('text', `value: ${data}; color: ${colorObj.black}; align:center;wrapCount:10`);
-        playerName.setAttribute('position', `0 15 0`);
-        targetEl.appendChild(playerName);
+        if(data != ''){
+            var playerName = document.createElement("a-entity");
+            playerName.setAttribute('geometry', `primitive: plane; width: 10; height: 3`);
+            playerName.setAttribute('material', `color: ${colorObj.white}`);
+            playerName.setAttribute('text', `value: ${data}; color: ${colorObj.black}; align:center;wrapCount:10`);
+            playerName.setAttribute('position', `0 15 0`);
+            targetEl.appendChild(playerName);
+        }
 
-        
     },
     update: function () {
     },
@@ -173,9 +168,20 @@ AFRAME.registerComponent('gorilla', {
     },
 });
 
-function setStartPosition() {
-    var startPosition = playerPosition[Math.floor(Math.random()*playerPosition.length)];
-    console.log("startPosition is " + startPosition.xPos + startPosition.zPos + startPosition.yPos);
+function setStartPositions() {
+    var startPosEnemy = playerPosition[Math.floor(Math.random()*playerPosition.length)];
+    var startPosMe = myPosition[Math.floor(Math.random()*myPosition.length)];
+    console.log("startPosEnemy is " + startPosEnemy.xPos + " " + startPosEnemy.yPos + " " + startPosEnemy.zPos);
+    console.log("startPosMe is " + startPosMe.xPos + " " + startPosMe.yPos + " " + startPosMe.zPos);
+    
+    document.querySelector('#enemy').setAttribute('position', startPosEnemy.xPos + " " + startPosEnemy.yPos + " " + startPosEnemy.zPos);
+    document.querySelector('#me').setAttribute('position', startPosMe.xPos + " " + startPosMe.yPos + " " + startPosMe.zPos);
 }
 
-
+var keyCount = 0;
+document.addEventListener("keydown", function(event) {
+    if(event.keyCode == 32){
+        keyCount++;
+        document.querySelector('#playerCam').setAttribute('camera', 'active', keyCount % 2 === 0 ? true : false);
+    }
+});
