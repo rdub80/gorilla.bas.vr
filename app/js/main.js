@@ -42,6 +42,34 @@ AFRAME.registerComponent('arena', {
 	}
 });
 
+AFRAME.registerComponent('sun', {
+    init: function () {
+        var targetEl = this.el;  
+        var sun = document.createElement("a-entity");
+        sun.setAttribute('geometry', `primitive:sphere;radius:3`);
+        sun.setAttribute('material', `color: ${colorObj.yellow};emissive:#333`);
+        targetEl.appendChild(sun);
+        var eye1 = document.createElement("a-entity");
+        eye1.setAttribute('geometry', `primitive:sphere;radius:0.5`);
+        eye1.setAttribute('material', `color: ${colorObj.black}`);
+        eye1.setAttribute('position', `-1 0.5 2.65`);
+        sun.appendChild(eye1);
+        var eye2 = document.createElement("a-entity");
+        eye2.setAttribute('geometry', `primitive:sphere;radius:0.5`);
+        eye2.setAttribute('material', `color: ${colorObj.black}`);
+        eye2.setAttribute('position', `1 0.5 2.65`);
+        sun.appendChild(eye2);
+        var mouth = document.createElement("a-entity");
+        mouth.setAttribute('geometry', `primitive:sphere;radius:1.2`);
+        mouth.setAttribute('material', `color: ${colorObj.black}`);
+        mouth.setAttribute('position', `0 -1 2.45`);
+        mouth.setAttribute('rotation', `10 0 0`);
+        mouth.setAttribute('scale', `1 1 0.15`);
+        sun.appendChild(mouth);
+        this.mouth = mouth;
+    }
+});
+
 AFRAME.registerComponent('banana', {
     init: function () {
         var targetEl = this.el;  
@@ -83,6 +111,7 @@ AFRAME.registerComponent('gorilla', {
     init: function () {
         var data = this.data;
         var targetEl = this.el;  
+
         var thegorilla = document.createElement("a-entity");
         thegorilla.setAttribute('position', `0 1.25 0`);
         targetEl.appendChild(thegorilla);
@@ -155,17 +184,7 @@ AFRAME.registerComponent('gorilla', {
             targetEl.appendChild(playerName);
         }
 
-    },
-    update: function () {
-    },
-    tick: function () {
-    },
-    remove: function () {
-    },
-    pause: function () {
-    },
-    play: function () {
-    },
+    }
 });
 
 function setStartPositions() {
@@ -175,13 +194,47 @@ function setStartPositions() {
     console.log("startPosMe is " + startPosMe.xPos + " " + startPosMe.yPos + " " + startPosMe.zPos);
     
     document.querySelector('#enemy').setAttribute('position', startPosEnemy.xPos + " " + startPosEnemy.yPos + " " + startPosEnemy.zPos);
-    document.querySelector('#me').setAttribute('position', startPosMe.xPos + " " + startPosMe.yPos + " " + startPosMe.zPos);
+    document.querySelector('#mygorilla').setAttribute('position', startPosMe.xPos + " " + startPosMe.yPos + " " + startPosMe.zPos);
 }
 
 var keyCount = 0;
 document.addEventListener("keydown", function(event) {
     if(event.keyCode == 32){
         keyCount++;
-        document.querySelector('#playerCam').setAttribute('camera', 'active', keyCount % 2 === 0 ? true : false);
+        document.querySelector('#playerCam').setAttribute('camera', 'active', keyCount % 2 === 0 ? false : true);
     }
 });
+
+var winAni, moveArm = 0, repeats = 5;
+function startParty(player) { 
+    if (!winAni) { 
+        winAni = setInterval(function(){
+            animateArms(player); 
+            --repeats || stopParty(player);
+        }, 500);
+    }
+}
+function stopParty(player) {
+    clearInterval(winAni); 
+    winAni = null; 
+    moveArm = 0; 
+    repeats = 5;
+    document.querySelector(player).components.gorilla.leftarm.setAttribute('rotation','0 0 0');
+    document.querySelector(player).components.gorilla.rightarm.setAttribute('rotation','0 0 0');
+}
+
+function animateArms(player) {
+    moveArm++;
+    if(moveArm % 2 === 0){
+        document.querySelector(player).components.gorilla.leftarm.setAttribute('rotation','180 0 0');
+        document.querySelector(player).components.gorilla.rightarm.setAttribute('rotation','0 0 0');
+    } else {
+        document.querySelector(player).components.gorilla.leftarm.setAttribute('rotation','0 0 0');
+        document.querySelector(player).components.gorilla.rightarm.setAttribute('rotation','180 0 0');
+    }
+}
+
+
+
+
+
