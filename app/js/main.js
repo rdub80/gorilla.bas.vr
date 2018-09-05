@@ -3,10 +3,38 @@ if (typeof AFRAME === 'undefined') {
   throw new Error('Component attempted to register before AFRAME was available.');
 }
 
+/* 
+p0 (Initial position) is the initial position of the projectile.
+v0 (Initial speed) is the speed at p0. Defined by the user, the higher the speed the further the distance.
+t (time) is the time since shot.
+a (acceleration) with gravity at 9.8m/s2.
+*/
+// Parabolic motion equation, y = p0 + v0*t + 1/2at^2
+function parabolicCurveScalar(p0, v0, a, t) {
+  return p0 + v0 * t + 0.5 * a * t * t;
+}
+
+// Parabolic motion equation applied to 3 dimensions
+function parabolicCurve(p0, v0, a, t, out) {
+  out.x = parabolicCurveScalar(p0.x, v0.x, a.x, t);
+  out.y = parabolicCurveScalar(p0.y, v0.y, a.y, t);
+  out.z = parabolicCurveScalar(p0.z, v0.z, a.z, t);
+  return out;
+}
+
+function getDistance(mesh1, mesh2) { 
+  var dx = mesh1.x - mesh2.x; 
+  var dy = mesh1.y - mesh2.y; 
+  var dz = mesh1.z - mesh2.z;
+  return Math.sqrt(dx*dx+dy*dy+dz*dz); 
+}
+
+
 /* ColorObj */
 var colorObj = {black: '#000', white: '#fff',yellow: '#ff0',skin: '#fa5',blue: '#00b', grey: '#555'};
 // light: '#aaa' cyan: '#0aa' marroon: '#a00'
 var buildingColors = ["#aaa", "#0aa", "#a00"], playerPosition = [], myPosition = [];
+
 
 AFRAME.registerComponent('arena', {
 	init: function () {
@@ -38,7 +66,6 @@ AFRAME.registerComponent('arena', {
 		        targetEl.appendChild(building);
 		     }
 		}
-        setStartPositions();
 	}
 });
 
@@ -187,54 +214,215 @@ AFRAME.registerComponent('gorilla', {
     }
 });
 
-function setStartPositions() {
-    var startPosEnemy = playerPosition[Math.floor(Math.random()*playerPosition.length)];
-    var startPosMe = myPosition[Math.floor(Math.random()*myPosition.length)];
-    console.log("startPosEnemy is " + startPosEnemy.xPos + " " + startPosEnemy.yPos + " " + startPosEnemy.zPos);
-    console.log("startPosMe is " + startPosMe.xPos + " " + startPosMe.yPos + " " + startPosMe.zPos);
+
+
+AFRAME.registerComponent('init', {
+  init: function () {
+    var sceneEl = this.el;
+
+    var enemy = document.querySelector('#enemy');
+    var my_gorilla = document.querySelector('#mygorilla');
+    var player = document.querySelector('#player');
+    var shotRot = document.getElementById("rot");
+    var shotAng = document.getElementById("ang");
+    var shotVel = document.getElementById("vel");
+
+    var force = shotVel.value;
+    var G = -9.8;
+
+    var shooter = document.createElement('a-entity');
+    shooter.setAttribute('position', '0 0 0');
+    sceneEl.appendChild(shooter);
+    this.shooter = shooter;
+    var shooterArrow = document.createElement('a-entity');
+    shooterArrow.setAttribute('geometry', 'primitive:box;width:0.075;height:0.075;depth:1');
+    shooterArrow.setAttribute('material', 'color:white;shader:flat;opacity:0.45');
+    shooterArrow.setAttribute('position', '0 0 -2');
+    shooter.appendChild(shooterArrow);
+    var shooterArrowHead = document.createElement('a-entity');
+    shooterArrowHead.setAttribute('geometry', 'primitive:cone;radiusTop:0.001;radiusBottom:0.175;height:0.5;');
+    shooterArrowHead.setAttribute('material', 'color:white;shader:flat;opacity:0.45');
+    shooterArrowHead.setAttribute('position', '0 0 -2.75');
+    shooterArrowHead.setAttribute('rotation', '-90 0 0');
+    shooter.appendChild(shooterArrowHead);
+
+//interaction
+
+    var keyCount = 0;
+    document.addEventListener("keydown", function(event) {
+        if(event.keyCode == 32){
+            keyCount++;
+            document.querySelector('#playerCam').setAttribute('camera', 'active', keyCount % 2 === 0 ? false : true);
+        }
+        if(event.keyCode == 37){ //left arrow
+            shotRot.value++;
+        }
+        if(event.keyCode == 39){ //right arrow
+            shotRot.value--;
+        }
+        if(event.keyCode == 38){ //up arrow
+            shotAng.value++;
+        }
+        if(event.keyCode == 40){ //down arrow
+            shotAng.value--;
+        }
+        if(event.keyCode == 187){ //plus
+            shotVel.value++;
+        }
+        if(event.keyCode == 189){ //minus
+            shotVel.value--;
+
+        }
+        if(event.keyCode == 13){ //enter
+            setThrow(shooter);
+        }
+        updatePlayer();
+    });
+
+    document.getElementById("play").addEventListener("click", function(event) {
+        setThrow(shooter);
+    });
+
+    shotRot.addEventListener("change", function(event) {
+      updatePlayer();
+    });
+    shotAng.addEventListener("change", function(event) {
+      updatePlayer();
+    });
+    shotVel.addEventListener("change", function(event) {
+      updatePlayer();
+    });
+
+    function updatePlayer(){
+      shooter.setAttribute('rotation', shotAng.value + ' ' + shotRot.value + ' 0');
+      player.setAttribute('rotation', '0 ' + (shotRot.value-180) + ' 0');
+      force = shotVel.value;
+    }
+
+//game setup
+    function setStartPositions() {
+        var startPosEnemy = playerPosition[Math.floor(Math.random()*playerPosition.length)];
+        var startPosMe = myPosition[Math.floor(Math.random()*myPosition.length)];
+        
+        enemy.setAttribute('position', startPosEnemy.xPos + " " + startPosEnemy.yPos + " " + startPosEnemy.zPos);
+        my_gorilla.setAttribute('position', startPosMe.xPos + " " + startPosMe.yPos + " " + startPosMe.zPos);
+        shooter.setAttribute('position', startPosMe.xPos + " " + (startPosMe.yPos+1.5) + " " + startPosMe.zPos);
+
+        console.log("startPos- enemy:" + startPosEnemy.xPos + " " + startPosEnemy.yPos + " " + startPosEnemy.zPos + " | my_gorilla:" + startPosMe.xPos + " " + startPosMe.yPos + " " + startPosMe.zPos + " | shooter:" + startPosMe.xPos + " " + (startPosMe.yPos+1.5) + " " + startPosMe.zPos);
+    }
+    setStartPositions();
+
+//throw action
+
+    function setThrow(shooterobj){
     
-    document.querySelector('#enemy').setAttribute('position', startPosEnemy.xPos + " " + startPosEnemy.yPos + " " + startPosEnemy.zPos);
-    document.querySelector('#mygorilla').setAttribute('position', startPosMe.xPos + " " + startPosMe.yPos + " " + startPosMe.zPos);
-}
+        var initTime = Date.now(); // milliseconds
+        var shotDirection = new THREE.Vector3();
+        shotDirection.set(0, 0, -1)
+          .applyQuaternion(shooterobj.object3D.quaternion)
+          .normalize();
+        var out = new THREE.Vector3(); // working scratch vector
+        var v0 = new THREE.Vector3(); // start velocity
+        v0.copy(shotDirection).multiplyScalar(force);
 
-var keyCount = 0;
-document.addEventListener("keydown", function(event) {
-    if(event.keyCode == 32){
-        keyCount++;
-        document.querySelector('#playerCam').setAttribute('camera', 'active', keyCount % 2 === 0 ? false : true);
+        var p0 = shooterobj.object3D.getWorldPosition(); // start position
+        var p1 = enemy.object3D.getWorldPosition(); // enemy position
+        var gravityVector = new THREE.Vector3(0, G, 0);
+
+        function setSpherePosition(t) {
+            parabolicCurve(p0, v0, gravityVector, t, out);
+
+            var b = document.createElement('a-sphere');
+            b.setAttribute('radius', '0.2');
+            b.setAttribute('color', 'red');
+
+            b.setAttribute('position', out);
+
+            sceneEl.appendChild(b); 
+
+            console.log("dist " + getDistance(p1, out)); 
+        }
+
+
+        var throwAni = null;
+        var ANIM_LENGTH = 3000; // ms
+        function throwIt(){
+          var now = Date.now();
+          var sinceStart = now - initTime;
+          var t = sinceStart % ANIM_LENGTH; // ms
+          var seconds = t / 1000;
+          
+          var dist = getDistance(p1, out);
+          setSpherePosition(seconds);
+          
+          if (sinceStart < ANIM_LENGTH && dist > 0.5){ // if ANIM_LENGTH not met yet and dist larger then 0.5 
+            throwAni = requestAnimationFrame(throwIt);
+          }
+          if (dist < 0.5){
+            cancel_animation();
+            console.log("hit");
+            //requestAnimationFrame(blow);
+          }
+        }
+
+        function run_animation() {
+            throwAni = requestAnimationFrame(throwIt);
+        }
+        function cancel_animation() {
+            cancelAnimationFrame(throwAni);
+        }
+        run_animation();
     }
-});
 
-var winAni, moveArm = 0, repeats = 5;
-function startParty(player) { 
-    if (!winAni) { 
-        winAni = setInterval(function(){
-            animateArms(player); 
-            --repeats || stopParty(player);
-        }, 500);
+
+    // var start = null;
+    // var DUR = 300;
+    // function blow(timestamp) {
+    //   if (!start) start = timestamp;
+    //   var progress = timestamp - start;
+    //   enemy.setAttribute('scale', '0 0 0');
+    //   var scalerate = (Math.round( Math.sin( (timestamp % start)/DUR * Math.PI) * 100) / 100) * 10 ;
+    //   console.log("progress: " + scalerate);
+    //   banana.setAttribute('color', 'red');
+    //   banana.setAttribute('scale', scalerate + ' ' + scalerate + ' ' + scalerate );
+      
+    //   if (progress < DUR) {
+    //     requestAnimationFrame(blow); 
+    //   }
+    // }
+
+
+//winning moves
+
+    var winAni, moveArm = 0, repeats = 5;
+    function startParty(player) { 
+        if (!winAni) { 
+            winAni = setInterval(function(){
+                animateArms(player); 
+                --repeats || stopParty(player);
+            }, 500);
+        }
     }
-}
-function stopParty(player) {
-    clearInterval(winAni); 
-    winAni = null; 
-    moveArm = 0; 
-    repeats = 5;
-    document.querySelector(player).components.gorilla.leftarm.setAttribute('rotation','0 0 0');
-    document.querySelector(player).components.gorilla.rightarm.setAttribute('rotation','0 0 0');
-}
-
-function animateArms(player) {
-    moveArm++;
-    if(moveArm % 2 === 0){
-        document.querySelector(player).components.gorilla.leftarm.setAttribute('rotation','180 0 0');
-        document.querySelector(player).components.gorilla.rightarm.setAttribute('rotation','0 0 0');
-    } else {
+    function stopParty(player) {
+        clearInterval(winAni); 
+        winAni = null; 
+        moveArm = 0; 
+        repeats = 5;
         document.querySelector(player).components.gorilla.leftarm.setAttribute('rotation','0 0 0');
-        document.querySelector(player).components.gorilla.rightarm.setAttribute('rotation','180 0 0');
+        document.querySelector(player).components.gorilla.rightarm.setAttribute('rotation','0 0 0');
     }
-}
+
+    function animateArms(player) {
+        moveArm++;
+        if(moveArm % 2 === 0){
+            document.querySelector(player).components.gorilla.leftarm.setAttribute('rotation','180 0 0');
+            document.querySelector(player).components.gorilla.rightarm.setAttribute('rotation','0 0 0');
+        } else {
+            document.querySelector(player).components.gorilla.leftarm.setAttribute('rotation','0 0 0');
+            document.querySelector(player).components.gorilla.rightarm.setAttribute('rotation','180 0 0');
+        }
+    }
 
 
-
-
-
+ }
+}); //init
