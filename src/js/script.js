@@ -14,6 +14,26 @@ function parabolicCurveScalar(p0, v0, a, t) {
   return p0 + v0 * t + 0.5 * a * t * t;
 }
 
+//time to the ground or building in free fall
+// t = Math.sqrt( (2 * h) / a )
+// t = (2 * v0 * Math.sin(shotAng) ) / a
+
+// h = p0 + v0 sin α * t - 0.5 * a * t * t; 
+
+// h + y0 = 1/2 * a * t * t;
+
+// h0 = (v * v * Math.sin(shotAng) * Math.sin(shotAng)) / 2 * a
+
+
+function hitTimeTaken(v0, a, alpha, h0, h1) {
+  t1 = (v0 * Math.sin(alpha) ) / a;
+  t2 = Math.sqrt( (2 * (h0 + h1)) / a );
+  return t1 + t2;
+}
+
+// Range = distance from launch point to hit point
+// r = (v0 * v0 * Math.sin(2 * shotAng)) / a
+
 // Parabolic motion equation applied to 3 dimensions
 function parabolicCurve(p0, v0, a, t, out) {
   out.x = parabolicCurveScalar(p0.x, v0.x, a.x, t);
@@ -33,17 +53,27 @@ function getDistance(mesh1, mesh2) {
 /* ColorObj */
 var colorObj = {black: '#000', white: '#fff',yellow: '#ff0',skin: '#fa5',blue: '#00b', grey: '#555'};
 // light: '#aaa' cyan: '#0aa' marroon: '#a00'
-var buildingColors = ["#aaa", "#0aa", "#a00"], playerPosition = [], myPosition = [];
+var buildingColors = ["#aaa", "#0aa", "#a00"], player2Position = [], player1Position = [];
 
 
 AFRAME.registerComponent('arena', {
 	init: function () {
 		var targetEl = this.el; 
-		 
-		var arenaDepth = 10;
-		var arenaWidth = 10;
+        var arenaDepth = 10;
+        var arenaWidth = 10;
+        targetEl.setAttribute('position', `-${(arenaWidth/2)*10 } 0 -${(arenaDepth/2)*10}`);
 
-		targetEl.setAttribute('position', `-${(arenaWidth/2)*10	} 0 -${(arenaDepth/2)*10}`);
+        var sky = document.createElement("a-sky");
+        sky.setAttribute('color', `${colorObj.blue}`);
+        targetEl.appendChild(sky);
+        var plane = document.createElement("a-plane");
+        plane.setAttribute('position', `${(arenaWidth/2)*10 - 5} 0 ${(arenaDepth/2)*10 - 5}`);
+        plane.setAttribute('rotation', `-90 0 0`);
+        plane.setAttribute('width', `100`);
+        plane.setAttribute('height', `100`);
+        plane.setAttribute('color', `${colorObj.grey}`);
+        targetEl.appendChild(plane);
+
 
 		for(i = 0; i < arenaDepth; i++)
 		{    
@@ -56,8 +86,8 @@ AFRAME.registerComponent('arena', {
 
                 var _x = (j*10) - (arenaWidth/2)*10;
                 var _z = (i*10) - (arenaDepth/2)*10;
-                if(i < 4){ playerPosition.push({ xPos: _x, zPos: _z, yPos: buildingHeight}) }
-                if(i > 6){ myPosition.push({ xPos: _x, zPos: _z, yPos: buildingHeight}) }
+                if(i < 4){ player2Position.push({ xPos: _x, zPos: _z, yPos: buildingHeight}) }
+                if(i > 6){ player1Position.push({ xPos: _x, zPos: _z, yPos: buildingHeight}) }
 
 		        var building = document.createElement("a-entity");
 		        building.setAttribute('geometry', `primitive: box; width: ${buildingWidth}; height: ${buildingHeight}; depth: ${buildingDepth};`);
@@ -131,7 +161,6 @@ AFRAME.registerComponent('banana', {
     play: function () {
     },
 });
-
 
 AFRAME.registerComponent('gorilla', {
     schema: {type: 'string', default: ''},
@@ -215,20 +244,21 @@ AFRAME.registerComponent('gorilla', {
 });
 
 
-
 AFRAME.registerComponent('init', {
   init: function () {
     var sceneEl = this.el;
 
-    var enemy = document.querySelector('#enemy');
-    var my_gorilla = document.querySelector('#mygorilla');
-    var player = document.querySelector('#player');
+    var player1 = document.querySelector('#p1');
+    var player2 = document.querySelector('#p2');
     var shotRot = document.getElementById("rot");
     var shotAng = document.getElementById("ang");
     var shotVel = document.getElementById("vel");
 
     var force = shotVel.value;
     var G = -9.8;
+
+    var p1Pos = new THREE.Vector3();
+    var p2Pos = new THREE.Vector3();
 
     var shooter = document.createElement('a-entity');
     shooter.setAttribute('position', '0 0 0');
@@ -247,12 +277,11 @@ AFRAME.registerComponent('init', {
     shooter.appendChild(shooterArrowHead);
 
 //interaction
-
     var keyCount = 0;
     document.addEventListener("keydown", function(event) {
         if(event.keyCode == 32){
             keyCount++;
-            document.querySelector('#playerCam').setAttribute('camera', 'active', keyCount % 2 === 0 ? false : true);
+            document.querySelector('#p1Cam').setAttribute('camera', 'active', keyCount % 2 === 0 ? false : true);
         }
         if(event.keyCode == 37){ //left arrow
             shotRot.value++;
@@ -295,20 +324,26 @@ AFRAME.registerComponent('init', {
 
     function updatePlayer(){
       shooter.setAttribute('rotation', shotAng.value + ' ' + shotRot.value + ' 0');
-      player.setAttribute('rotation', '0 ' + (shotRot.value-180) + ' 0');
+      p1.setAttribute('rotation', '0 ' + shotRot.value + ' 0');
       force = shotVel.value;
     }
 
 //game setup
     function setStartPositions() {
-        var startPosEnemy = playerPosition[Math.floor(Math.random()*playerPosition.length)];
-        var startPosMe = myPosition[Math.floor(Math.random()*myPosition.length)];
+        var startPosP1 = player1Position[Math.floor(Math.random()*player1Position.length)];
+        var startPosP2 = player2Position[Math.floor(Math.random()*player2Position.length)];
         
-        enemy.setAttribute('position', startPosEnemy.xPos + " " + startPosEnemy.yPos + " " + startPosEnemy.zPos);
-        my_gorilla.setAttribute('position', startPosMe.xPos + " " + startPosMe.yPos + " " + startPosMe.zPos);
-        shooter.setAttribute('position', startPosMe.xPos + " " + (startPosMe.yPos+1.5) + " " + startPosMe.zPos);
+        var transP1 = new THREE.Vector3(startPosP1.xPos,startPosP1.yPos,startPosP1.zPos);
+        var transP2 = new THREE.Vector3(startPosP2.xPos,startPosP2.yPos,startPosP2.zPos);
+        p1Pos.add(transP1);
+        p2Pos.add(transP2);
 
-        console.log("startPos- enemy:" + startPosEnemy.xPos + " " + startPosEnemy.yPos + " " + startPosEnemy.zPos + " | my_gorilla:" + startPosMe.xPos + " " + startPosMe.yPos + " " + startPosMe.zPos + " | shooter:" + startPosMe.xPos + " " + (startPosMe.yPos+1.5) + " " + startPosMe.zPos);
+        p1.setAttribute('position', p1Pos);
+        p2.setAttribute('position', p2Pos);
+
+        shooter.setAttribute('position', startPosP1.xPos + " " + (startPosP1.yPos+1.5) + " " + startPosP1.zPos);
+
+        console.log("startPos- enemy:" + startPosP2.xPos + " " + startPosP2.yPos + " " + startPosP2.zPos + " | my_gorilla:" + startPosP1.xPos + " " + startPosP1.yPos + " " + startPosP1.zPos + " | shooter:" + startPosP1.xPos + " " + (startPosP1.yPos+1.5) + " " + startPosP1.zPos);
     }
     setStartPositions();
 
@@ -326,7 +361,7 @@ AFRAME.registerComponent('init', {
         v0.copy(shotDirection).multiplyScalar(force);
 
         var p0 = shooterobj.object3D.getWorldPosition(); // start position
-        var p1 = enemy.object3D.getWorldPosition(); // enemy position
+        var pF = p2.object3D.getWorldPosition(); // enemy position
         var gravityVector = new THREE.Vector3(0, G, 0);
 
         function setSpherePosition(t) {
@@ -340,8 +375,10 @@ AFRAME.registerComponent('init', {
 
             sceneEl.appendChild(b); 
 
-            console.log("dist " + getDistance(p1, out)); 
+            console.log("dist " + getDistance(pF, out)); 
         }
+
+        //console.log("Time estimate: " + hitTimeTaken(shotVel.value, G, shotAng.value, 0, 0) );
 
 
         var throwAni = null;
@@ -352,7 +389,7 @@ AFRAME.registerComponent('init', {
           var t = sinceStart % ANIM_LENGTH; // ms
           var seconds = t / 1000;
           
-          var dist = getDistance(p1, out);
+          var dist = getDistance(pF, out);
           setSpherePosition(seconds);
           
           if (sinceStart < ANIM_LENGTH && dist > 0.5){ // if ANIM_LENGTH not met yet and dist larger then 0.5 
