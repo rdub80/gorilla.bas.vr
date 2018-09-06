@@ -16,32 +16,41 @@
 
 </head>
 <body>
-  <p style="position:absolute;z-index:1000">
-    Y Rotation: <input id="rot" type="text" name="rot" value="0"><br>
-    X Angle: <input id="ang" type="text" name="ang" value="0"><br>
-    Velocity: <input id="vel" type="text" name="vel" value="10"><br>
-    <button id="play">Fire Player1</button>
+  <p style="position:absolute;z-index:1000;left:0;">
+    Y Rotation: <input id="rot1" type="text" name="rot1" value="0"><br>
+    X Angle: <input id="ang1" type="text" name="ang1" value="0"><br>
+    Velocity: <input id="vel1" type="text" name="vel1" value="10"><br>
+    <button id="playP1">Fire Player1</button>
   </p>
+
+  <p style="position:absolute;z-index:1000;right:0;">
+    Y Rotation: <input id="rot2" type="text" name="rot2" value="0"><br>
+    X Angle: <input id="ang2" type="text" name="ang2" value="0"><br>
+    Velocity: <input id="vel2" type="text" name="vel2" value="10"><br>
+    <button id="playP2">Fire Player2</button>
+  </p>
+
   <a-scene init>
 
     <a-entity arena shadow></a-entity> 
     <a-entity sun position="0 50 0"></a-entity>
 
     <a-entity id="p2">
-      <a-entity id="p2Gorilla" gorilla="player_2" rotation="0 0 0"></a-entity>
-      <a-camera id="p2Cam" look-controls="pointerLockEnabled:true" wasd-controls="enabled:false"  position="0 3.5 0"></a-camera>
+      <a-entity gorilla="player_2" rotation="0 0 0"></a-entity>
+      <a-camera id="p2Cam" look-controls="pointerLockEnabled:true" wasd-controls="enabled:false"  position="0 4.5 0"></a-camera>
     </a-entity>
 
     <a-entity id="p1">
-      <a-entity id="p1Gorilla" gorilla="player_1" rotation="0 180 0"></a-entity>
-      <a-camera id="p1Cam" look-controls="pointerLockEnabled:true" wasd-controls="enabled:false"  position="0 3.5 0"></a-camera>
+      <a-entity gorilla="player_1" rotation="0 180 0"></a-entity>
+      <a-camera id="p1Cam" look-controls="pointerLockEnabled:true" wasd-controls="enabled:false"  position="0 4.5 0"></a-camera>
     </a-entity>
 
 
-    <a-entity banana></a-entity>
+    <!-- <a-entity banana></a-entity> -->
 
-    <a-camera id="overviewP1Cam" look-controls="pointerLockEnabled:true" wasd-controls="enabled:false" position="0 50 40"> 
-    </a-camera>
+    <a-entity id="overviewP1Cam" position="60 60 0" rotation="-30 90 0">
+      <a-camera look-controls="pointerLockEnabled:true" wasd-controls="enabled:false"></a-camera>
+    </a-entity>
     
   </a-scene>  
 

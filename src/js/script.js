@@ -49,7 +49,6 @@ function getDistance(mesh1, mesh2) {
   return Math.sqrt(dx*dx+dy*dy+dz*dz); 
 }
 
-
 /* ColorObj */
 var colorObj = {black: '#000', white: '#fff',yellow: '#ff0',skin: '#fa5',blue: '#00b', grey: '#555'};
 // light: '#aaa' cyan: '#0aa' marroon: '#a00'
@@ -61,13 +60,13 @@ AFRAME.registerComponent('arena', {
 		var targetEl = this.el; 
         var arenaDepth = 10;
         var arenaWidth = 10;
-        targetEl.setAttribute('position', `-${(arenaWidth/2)*10 } 0 -${(arenaDepth/2)*10}`);
+        targetEl.setAttribute('position', `-${(arenaWidth/2)*10-5 } 0 -${(arenaDepth/2)*10-5}`);
 
         var sky = document.createElement("a-sky");
         sky.setAttribute('color', `${colorObj.blue}`);
         targetEl.appendChild(sky);
         var plane = document.createElement("a-plane");
-        plane.setAttribute('position', `${(arenaWidth/2)*10 - 5} 0 ${(arenaDepth/2)*10 - 5}`);
+        plane.setAttribute('position', `${(arenaWidth/2)*10-5} 0 ${(arenaDepth/2)*10-5}`);
         plane.setAttribute('rotation', `-90 0 0`);
         plane.setAttribute('width', `100`);
         plane.setAttribute('height', `100`);
@@ -84,8 +83,8 @@ AFRAME.registerComponent('arena', {
 				var buildingHeight = Math.floor(Math.random() * 10) + 15;
 				var buildingColor = buildingColors[Math.floor(Math.random() * 3)];
 
-                var _x = (j*10) - (arenaWidth/2)*10;
-                var _z = (i*10) - (arenaDepth/2)*10;
+                var _x = (j*10) - (arenaWidth/2)*10+5;
+                var _z = (i*10) - (arenaDepth/2)*10+5;
                 if(i < 4){ player2Position.push({ xPos: _x, zPos: _z, yPos: buildingHeight}) }
                 if(i > 6){ player1Position.push({ xPos: _x, zPos: _z, yPos: buildingHeight}) }
 
@@ -101,6 +100,8 @@ AFRAME.registerComponent('arena', {
 
 AFRAME.registerComponent('sun', {
     init: function () {
+        this.target3D = null;
+        this.vector = new THREE.Vector3();        
         var targetEl = this.el;  
         var sun = document.createElement("a-entity");
         sun.setAttribute('geometry', `primitive:sphere;radius:3`);
@@ -124,7 +125,31 @@ AFRAME.registerComponent('sun', {
         mouth.setAttribute('scale', `1 1 0.15`);
         sun.appendChild(mouth);
         this.mouth = mouth;
-    }
+    },
+    tick: (function () {
+        var vec3 = new THREE.Vector3();
+
+        return function (t) {
+          var target3D = null;
+          for (var i = 0; i < document.querySelectorAll('a-camera').length; i++) {
+            if(document.querySelectorAll('a-camera')[i].components.camera.data.active){
+                target3D = document.querySelectorAll('a-camera')[i].object3D;
+            }
+          }
+          var object3D = this.el.object3D;
+          var vector = this.vector;
+
+          if (target3D) {
+            object3D.parent.worldToLocal(target3D.getWorldPosition(vec3));
+            if (this.el.getObject3D('camera')) {
+              vector.subVectors(object3D.position, vec3).add(object3D.position);
+            } else {
+              vector = vec3;
+            }
+            object3D.lookAt(vector);
+          }
+        };
+    })(),    
 });
 
 AFRAME.registerComponent('banana', {
@@ -250,11 +275,14 @@ AFRAME.registerComponent('init', {
 
     var player1 = document.querySelector('#p1');
     var player2 = document.querySelector('#p2');
-    var shotRot = document.getElementById("rot");
-    var shotAng = document.getElementById("ang");
-    var shotVel = document.getElementById("vel");
+    var shotRotP1 = document.getElementById("rot1");
+    var shotAngP1 = document.getElementById("ang1");
+    var shotVelP1 = document.getElementById("vel1");
+    var shotRotP2 = document.getElementById("rot2");
+    var shotAngP2 = document.getElementById("ang2");
+    var shotVelP2 = document.getElementById("vel2");
 
-    var force = shotVel.value;
+    var force = shotVelP1.value;
     var G = -9.8;
 
     var p1Pos = new THREE.Vector3();
@@ -276,31 +304,64 @@ AFRAME.registerComponent('init', {
     shooterArrowHead.setAttribute('rotation', '-90 0 0');
     shooter.appendChild(shooterArrowHead);
 
+    var banana = document.createElement('a-entity');
+    banana.setAttribute('banana','');
+    sceneEl.appendChild(banana); 
+
+
 //interaction
+    var turnP1 = true;
     var keyCount = 0;
     document.addEventListener("keydown", function(event) {
         if(event.keyCode == 32){
             keyCount++;
-            document.querySelector('#p1Cam').setAttribute('camera', 'active', keyCount % 2 === 0 ? false : true);
+            if(turnP1){
+                document.querySelector('#p1Cam').setAttribute('camera', 'active', keyCount % 2 === 0 ? false : true);
+            }else{
+                document.querySelector('#p2Cam').setAttribute('camera', 'active', keyCount % 2 === 0 ? false : true);
+            }
         }
         if(event.keyCode == 37){ //left arrow
-            shotRot.value++;
+            if(turnP1){
+                shotRotP1.value++;
+            }else{
+                shotRotP2.value++;
+            }
         }
         if(event.keyCode == 39){ //right arrow
-            shotRot.value--;
+            if(turnP1){
+                shotRotP1.value--;
+            }else{
+                shotRotP2.value--;
+            }
         }
         if(event.keyCode == 38){ //up arrow
-            shotAng.value++;
+            if(turnP1){
+                shotAngP1.value++;
+            }else{
+                shotAngP2.value++;
+            }
         }
         if(event.keyCode == 40){ //down arrow
-            shotAng.value--;
+            if(turnP1){
+                shotAngP1.value--;
+            }else{
+                shotAngP2.value--;
+            }
         }
         if(event.keyCode == 187){ //plus
-            shotVel.value++;
+            if(turnP1){
+                shotVelP1.value++;
+            }else{
+                shotVelP2.value++;
+            }
         }
         if(event.keyCode == 189){ //minus
-            shotVel.value--;
-
+            if(turnP1){
+                shotVelP1.value--;
+            }else{
+                shotVelP2.value--;
+            }
         }
         if(event.keyCode == 13){ //enter
             setThrow(shooter);
@@ -308,24 +369,42 @@ AFRAME.registerComponent('init', {
         updatePlayer();
     });
 
-    document.getElementById("play").addEventListener("click", function(event) {
+    document.getElementById("playP1").addEventListener("click", function(event) {
         setThrow(shooter);
     });
+    document.getElementById("playP2").addEventListener("click", function(event) {
+        //setThrow(shooter);
+    });
 
-    shotRot.addEventListener("change", function(event) {
+    shotRotP1.addEventListener("change", function(event) {
       updatePlayer();
     });
-    shotAng.addEventListener("change", function(event) {
+    shotAngP1.addEventListener("change", function(event) {
       updatePlayer();
     });
-    shotVel.addEventListener("change", function(event) {
+    shotVelP1.addEventListener("change", function(event) {
+      updatePlayer();
+    });
+    shotRotP2.addEventListener("change", function(event) {
+      updatePlayer();
+    });
+    shotAngP2.addEventListener("change", function(event) {
+      updatePlayer();
+    });
+    shotVelP2.addEventListener("change", function(event) {
       updatePlayer();
     });
 
     function updatePlayer(){
-      shooter.setAttribute('rotation', shotAng.value + ' ' + shotRot.value + ' 0');
-      p1.setAttribute('rotation', '0 ' + shotRot.value + ' 0');
-      force = shotVel.value;
+        if(turnP1){
+            force = shotVelP1.value;
+            shooter.setAttribute('rotation', shotAngP1.value + ' ' + shotRotP1.value + ' 0');
+            p1.setAttribute('rotation', '0 ' + shotRotP1.value + ' 0');
+        }else{
+            force = shotVelP2.value;
+            //shooter.setAttribute('rotation', shotAngP2.value + ' ' + shotRotP2.value + ' 0');
+            p2.setAttribute('rotation', '0 ' + shotRotP2.value + ' 0');
+        }      
     }
 
 //game setup
@@ -364,25 +443,29 @@ AFRAME.registerComponent('init', {
         var pF = p2.object3D.getWorldPosition(); // enemy position
         var gravityVector = new THREE.Vector3(0, G, 0);
 
+
         function setSpherePosition(t) {
             parabolicCurve(p0, v0, gravityVector, t, out);
 
+//trace
             var b = document.createElement('a-sphere');
-            b.setAttribute('radius', '0.2');
-            b.setAttribute('color', 'red');
-
+            b.setAttribute('radius', '0.1');
+            b.setAttribute('color', '#fff');
             b.setAttribute('position', out);
-
             sceneEl.appendChild(b); 
 
+            banana.setAttribute('position', out);
+            banana.setAttribute('rotation', '0 90 '+ (720/t) );
+
             console.log("dist " + getDistance(pF, out)); 
+            console.log("t " + t); 
         }
 
         //console.log("Time estimate: " + hitTimeTaken(shotVel.value, G, shotAng.value, 0, 0) );
 
 
         var throwAni = null;
-        var ANIM_LENGTH = 3000; // ms
+        var ANIM_LENGTH = 4000; // ms
         function throwIt(){
           var now = Date.now();
           var sinceStart = now - initTime;
