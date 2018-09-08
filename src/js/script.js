@@ -27,8 +27,8 @@ function parabolicCurveScalar(p0, v0, a, t) {
 
 function hitTimeTaken(v0, a, alpha, h0, h1) {
   t1 = (v0 * Math.sin(alpha) ) / a;
-  t2 = Math.sqrt( (2 * (h0 + h1)) / a );
-  return t1 + t2;
+  t2 = Math.sqrt( 2 * (h0 + h1) / a );
+  return t1+t2;
 }
 
 // Range = distance from launch point to hit point
@@ -78,9 +78,12 @@ AFRAME.registerComponent('arena', {
 		{    
 			for(j = 0; j < arenaWidth; j++)
 		     {
-				var buildingWidth = Math.floor(Math.random() * 5) + 5;
-				var buildingDepth = Math.floor(Math.random() * 5) + 5;
-				var buildingHeight = Math.floor(Math.random() * 10) + 15;
+				// var buildingWidth = Math.floor(Math.random() * 5) + 5;
+				// var buildingDepth = Math.floor(Math.random() * 5) + 5;
+				// var buildingHeight = Math.floor(Math.random() * 10) + 15;
+
+                var buildingWidth = 9, buildingDepth = 9, buildingHeight = 0.5;
+
 				var buildingColor = buildingColors[Math.floor(Math.random() * 3)];
 
                 var _x = (j*10) - (arenaWidth/2)*10+5;
@@ -99,6 +102,9 @@ AFRAME.registerComponent('arena', {
 });
 
 AFRAME.registerComponent('sun', {
+    schema:{
+        hit: {type: 'boolean', default: false}
+    },
     init: function () {
         this.target3D = null;
         this.vector = new THREE.Vector3();        
@@ -118,10 +124,10 @@ AFRAME.registerComponent('sun', {
         eye2.setAttribute('position', `1 0.5 2.65`);
         sun.appendChild(eye2);
         var mouth = document.createElement("a-entity");
-        mouth.setAttribute('geometry', `primitive:sphere;radius:1.2`);
+        mouth.setAttribute('geometry', `primitive:sphere;radius:1.1`);
         mouth.setAttribute('material', `color: ${colorObj.black}`);
-        mouth.setAttribute('position', `0 -1 2.45`);
-        mouth.setAttribute('rotation', `10 0 0`);
+        mouth.setAttribute('position', `0 -0.8 2.6`);
+        mouth.setAttribute('rotation', `8 0 0`);
         mouth.setAttribute('scale', `1 1 0.15`);
         sun.appendChild(mouth);
         this.mouth = mouth;
@@ -149,7 +155,21 @@ AFRAME.registerComponent('sun', {
             object3D.lookAt(vector);
           }
         };
-    })(),    
+    })(), 
+    update: function (oldData) {
+        var data = this.data;
+        var el = this.el;
+        if (Object.keys(oldData).length === 0) { return; }
+        if(data.hit){
+            this.mouth.setAttribute('geometry', `radius:1`);
+            this.mouth.setAttribute('position', `0 -1.5 2.5`);
+            this.mouth.setAttribute('rotation', `30 0 0`);
+        }else{
+            this.mouth.setAttribute('geometry', `radius:1.1`);
+            this.mouth.setAttribute('position', `0 -0.8 2.6`);
+            this.mouth.setAttribute('rotation', `8 0 0`);
+        }
+    },       
 });
 
 AFRAME.registerComponent('banana', {
@@ -178,6 +198,9 @@ AFRAME.registerComponent('banana', {
     update: function () {
     },
     tick: function () {
+        var sun = document.querySelector('[sun]');
+        var sunBananaDist = getDistance(this.el.object3D.getWorldPosition(), sun.object3D.getWorldPosition());
+        if (sunBananaDist < 3){ sun.setAttribute('sun','hit',true) }        
     },
     remove: function () {
     },
@@ -309,7 +332,7 @@ AFRAME.registerComponent('init', {
     sceneEl.appendChild(banana); 
 
 
-//interaction
+    //interaction
     var turnP1 = true;
     var keyCount = 0;
     document.addEventListener("keydown", function(event) {
@@ -400,6 +423,15 @@ AFRAME.registerComponent('init', {
             force = shotVelP1.value;
             shooter.setAttribute('rotation', shotAngP1.value + ' ' + shotRotP1.value + ' 0');
             p1.setAttribute('rotation', '0 ' + shotRotP1.value + ' 0');
+
+            var initialVelocity = shotVelP1.value;            
+            var gravity = 9.8;
+            var shotAngle = shotAngP1.value;
+            var shooterHeight = shooter.object3D.getWorldPosition().y;
+            var groundHeight = 0;
+
+            console.log("hit time estimate: " + hitTimeTaken(initialVelocity, gravity, shotAngle, shooterHeight, groundHeight));
+            console.log(shooterHeight);
         }else{
             force = shotVelP2.value;
             //shooter.setAttribute('rotation', shotAngP2.value + ' ' + shotRotP2.value + ' 0');
@@ -407,7 +439,7 @@ AFRAME.registerComponent('init', {
         }      
     }
 
-//game setup
+    //game setup
     function setStartPositions() {
         var startPosP1 = player1Position[Math.floor(Math.random()*player1Position.length)];
         var startPosP2 = player2Position[Math.floor(Math.random()*player2Position.length)];
@@ -426,7 +458,7 @@ AFRAME.registerComponent('init', {
     }
     setStartPositions();
 
-//throw action
+    //throw action
 
     function setThrow(shooterobj){
     
@@ -447,9 +479,9 @@ AFRAME.registerComponent('init', {
         function setSpherePosition(t) {
             parabolicCurve(p0, v0, gravityVector, t, out);
 
-//trace
+    //trace
             var b = document.createElement('a-sphere');
-            b.setAttribute('radius', '0.1');
+            b.setAttribute('radius', '0.05');
             b.setAttribute('color', '#fff');
             b.setAttribute('position', out);
             sceneEl.appendChild(b); 
@@ -457,15 +489,13 @@ AFRAME.registerComponent('init', {
             banana.setAttribute('position', out);
             banana.setAttribute('rotation', '0 90 '+ (720/t) );
 
-            console.log("dist " + getDistance(pF, out)); 
-            console.log("t " + t); 
         }
 
         //console.log("Time estimate: " + hitTimeTaken(shotVel.value, G, shotAng.value, 0, 0) );
 
 
         var throwAni = null;
-        var ANIM_LENGTH = 4000; // ms
+        var ANIM_LENGTH = 6000; // ms
         function throwIt(){
           var now = Date.now();
           var sinceStart = now - initTime;
@@ -512,37 +542,87 @@ AFRAME.registerComponent('init', {
     // }
 
 
-//winning moves
-
-    var winAni, moveArm = 0, repeats = 5;
-    function startParty(player) { 
-        if (!winAni) { 
-            winAni = setInterval(function(){
-                animateArms(player); 
-                --repeats || stopParty(player);
-            }, 500);
-        }
-    }
-    function stopParty(player) {
-        clearInterval(winAni); 
-        winAni = null; 
-        moveArm = 0; 
-        repeats = 5;
-        document.querySelector(player).components.gorilla.leftarm.setAttribute('rotation','0 0 0');
-        document.querySelector(player).components.gorilla.rightarm.setAttribute('rotation','0 0 0');
-    }
-
-    function animateArms(player) {
-        moveArm++;
-        if(moveArm % 2 === 0){
-            document.querySelector(player).components.gorilla.leftarm.setAttribute('rotation','180 0 0');
-            document.querySelector(player).components.gorilla.rightarm.setAttribute('rotation','0 0 0');
-        } else {
-            document.querySelector(player).components.gorilla.leftarm.setAttribute('rotation','0 0 0');
-            document.querySelector(player).components.gorilla.rightarm.setAttribute('rotation','180 0 0');
-        }
-    }
 
 
  }
 }); //init
+
+
+//winning moves
+
+var winAni, moveArm = 0, repeats = 5;
+function startParty(player) { 
+    if (!winAni) { 
+        winAni = setInterval(function(){
+            animateArms(player); 
+            armsound();
+            --repeats || stopParty(player);
+        }, 500);
+    }
+}
+function stopParty(player) {
+    clearInterval(winAni); 
+    winAni = null; 
+    moveArm = 0; 
+    repeats = 5;
+    document.querySelector(player).children["0"].components.gorilla.leftarm.setAttribute('rotation','0 0 0');
+    document.querySelector(player).children["0"].components.gorilla.rightarm.setAttribute('rotation','0 0 0');
+}
+
+function animateArms(player) {
+    moveArm++;
+    if(moveArm % 2 === 0){
+        document.querySelector(player).children["0"].components.gorilla.leftarm.setAttribute('rotation','180 0 0');
+        document.querySelector(player).children["0"].components.gorilla.rightarm.setAttribute('rotation','0 0 0');
+    } else {
+        document.querySelector(player).children["0"].components.gorilla.leftarm.setAttribute('rotation','0 0 0');
+        document.querySelector(player).children["0"].components.gorilla.rightarm.setAttribute('rotation','180 0 0');
+    }
+}
+
+
+//music & soundeffects
+
+var A = new AudioContext;
+function introsong(){
+    if (A.state != "closed"){
+        A.close();
+    };
+    var exp = new Object;
+    exp.value = 
+    `with(new AudioContext)
+    with(G=createGain())
+    for(i in D=[,,7,9,11,,11,,,11,,11,,,,,,,,11,,9,,,,12])
+    with(createOscillator())
+    if(D[i])
+    connect(G),
+    G.connect(destination),
+    start(i*.1),
+    frequency.setValueAtTime(440*1.06**(13-D[i]),i*.1),type='square',
+    gain.setValueAtTime(1,i*.1),
+    gain.setTargetAtTime(.0001,i*.1+.08,.005),
+    stop(i*.1+.09)`;
+    eval(exp.value);
+}
+
+
+function armsound(){
+    if (A.state != "closed"){
+        A.close();
+    };
+    var exp = new Object;
+    exp.value = 
+    `with(new AudioContext)
+    with(G=createGain())
+    for(i in D=[25])
+    with(createOscillator())
+    if(D[i])
+    connect(G),
+    G.connect(destination),
+    start(i*.25),
+    frequency.setValueAtTime(100*1.06**(13-D[i]),i*.25),type='square',
+    gain.setValueAtTime(1,i*.25),
+    gain.setTargetAtTime(.0001,i*.25+.23,.005),
+    stop(i*.25+.24)`;
+    eval(exp.value);
+}
