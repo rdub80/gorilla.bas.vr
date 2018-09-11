@@ -73,7 +73,6 @@ AFRAME.registerComponent('arena', {
         plane.setAttribute('color', `${colorObj.grey}`);
         targetEl.appendChild(plane);
 
-
 		for(i = 0; i < arenaDepth; i++)
 		{    
 			for(j = 0; j < arenaWidth; j++)
@@ -174,6 +173,8 @@ AFRAME.registerComponent('sun', {
 
 AFRAME.registerComponent('banana', {
     init: function () {
+        var sun = this.sun = document.querySelector('[sun]');
+        var gorillas = this.gorillas = document.querySelectorAll('[gorilla]');
         var targetEl = this.el;  
         var thebanana = document.createElement("a-entity");
         thebanana.setAttribute('scale', `0.8 1 1`);
@@ -198,16 +199,78 @@ AFRAME.registerComponent('banana', {
     update: function () {
     },
     tick: function () {
-        var sun = document.querySelector('[sun]');
-        var sunBananaDist = getDistance(this.el.object3D.getWorldPosition(), sun.object3D.getWorldPosition());
-        if (sunBananaDist < 3){ sun.setAttribute('sun','hit',true) }        
+        var sunBananaDist = getDistance(this.el.object3D.getWorldPosition(), this.sun.object3D.getWorldPosition());
+        if (sunBananaDist < 3){ this.sun.setAttribute('sun','hit',true) }        
+        
+        for (i = 0; i < this.gorillas.length; i++) { 
+            var gorillaBananaDist = getDistance(this.el.object3D.getWorldPosition(), this.gorillas[i].object3D.getWorldPosition());
+            if (gorillaBananaDist < 3){ console.log('hitting a gorilla'); }        
+        }
+
+
     },
     remove: function () {
     },
-    pause: function () {
+    miss: function () {
+        if (A.state != "closed"){
+            A.close();
+        };
+        var exp = new Object;
+        exp.value = 
+        `with(new AudioContext)
+        with(G=createGain())
+        for(i in D=[18,17,15,18,17,20,22])
+        with(createOscillator())
+        if(D[i])
+        connect(G),
+        G.connect(destination),
+        start(i*.05),
+        frequency.setValueAtTime(110*1.06**(13-D[i]),i*.05),type='square',
+        gain.setValueAtTime(1,i*.05),
+        gain.setTargetAtTime(.0001,i*.05+.03,.005),
+        stop(i*.05+.04)`;
+        eval(exp.value);
     },
-    play: function () {
+    hit: function () {
+        if (A.state != "closed"){
+            A.close();
+        };
+        var exp = new Object;
+        exp.value = 
+        `with(new AudioContext)
+        with(G=createGain())
+        for(i in D=[18,17,15,18,17,20,22])
+        with(createOscillator())
+        if(D[i])
+        connect(G),
+        G.connect(destination),
+        start(i*.1),
+        frequency.setValueAtTime(110*1.06**(13-D[i]),i*.1),type='square',
+        gain.setValueAtTime(1,i*.1),
+        gain.setTargetAtTime(.0001,i*.1+.08,.005),
+        stop(i*.1+.09)`;
+        eval(exp.value);
     },
+    throw: function () {
+        if (A.state != "closed"){
+            A.close();
+        };
+        var exp = new Object;
+        exp.value = 
+        `with(G=createGain())
+        for(i in D=[23,13,11])
+        with(createOscillator())
+        if(D[i])
+        connect(G),
+        G.connect(destination),
+        start(i*.06),
+        frequency.setValueAtTime(110*1.06**(13-D[i]),i*.06),type='square',
+        gain.setValueAtTime(1,i*.06),
+        gain.setTargetAtTime(.0001,i*.06+.04,.005),
+        stop(i*.06+.05)`;
+        eval(exp.value);
+    }
+
 });
 
 AFRAME.registerComponent('gorilla', {
@@ -550,12 +613,12 @@ AFRAME.registerComponent('init', {
 
 //winning moves
 
-var winAni, moveArm = 0, repeats = 5;
+var winAni, moveArm = 0, repeats = 8;
 function startParty(player) { 
     if (!winAni) { 
         winAni = setInterval(function(){
             animateArms(player); 
-            armsound();
+            armSound();
             --repeats || stopParty(player);
         }, 500);
     }
@@ -564,7 +627,7 @@ function stopParty(player) {
     clearInterval(winAni); 
     winAni = null; 
     moveArm = 0; 
-    repeats = 5;
+    repeats = 8;
     document.querySelector(player).children["0"].components.gorilla.leftarm.setAttribute('rotation','0 0 0');
     document.querySelector(player).children["0"].components.gorilla.rightarm.setAttribute('rotation','0 0 0');
 }
@@ -592,21 +655,20 @@ function introsong(){
     exp.value = 
     `with(new AudioContext)
     with(G=createGain())
-    for(i in D=[,,7,9,11,,11,,,11,,11,,,,,,,,11,,9,,,,12])
+    for(i in D=[23,,,23,25,25,,23,,23,,23,25,25,25,,23,,,23,25,25,,23,19,,,19,21,21,,19,,19,,19,21,21,21,,19,,,19,21,21,,19,16,,,16,18,18,,16,,16,,16,18,18,18,,16,,,16,18,18,,16,11,,,11,13,13,,16,,16,,16,18,18,18,,23,,,23,25,25,,23])
     with(createOscillator())
     if(D[i])
     connect(G),
     G.connect(destination),
-    start(i*.1),
-    frequency.setValueAtTime(440*1.06**(13-D[i]),i*.1),type='square',
-    gain.setValueAtTime(1,i*.1),
-    gain.setTargetAtTime(.0001,i*.1+.08,.005),
-    stop(i*.1+.09)`;
+    start(i*.128),
+    frequency.setValueAtTime(440*1.06**(13-D[i]),i*.128),type='square',
+    gain.setValueAtTime(1,i*.128),
+    gain.setTargetAtTime(.0001,i*.128+.11,.005),
+    stop(i*.128+.12)`;
     eval(exp.value);
 }
 
-
-function armsound(){
+function armSound() {
     if (A.state != "closed"){
         A.close();
     };
@@ -614,15 +676,57 @@ function armsound(){
     exp.value = 
     `with(new AudioContext)
     with(G=createGain())
-    for(i in D=[25])
+    for(i in D=[18,17,15,18,17,20,22])
     with(createOscillator())
     if(D[i])
     connect(G),
     G.connect(destination),
-    start(i*.25),
-    frequency.setValueAtTime(100*1.06**(13-D[i]),i*.25),type='square',
-    gain.setValueAtTime(1,i*.25),
-    gain.setTargetAtTime(.0001,i*.25+.23,.005),
-    stop(i*.25+.24)`;
+    start(i*.05),
+    frequency.setValueAtTime(110*1.06**(13-D[i]),i*.05),type='square',
+    gain.setValueAtTime(1,i*.05),
+    gain.setTargetAtTime(.0001,i*.05+.03,.005),
+    stop(i*.05+.04)`;
     eval(exp.value);
 }
+
+/*
+function bananaThrow() {
+    if (A.state != "closed"){
+        A.close();
+    };
+    var exp = new Object;
+    exp.value = 
+    `with(G=createGain())
+    for(i in D=[23,13,11])
+    with(createOscillator())
+    if(D[i])
+    connect(G),
+    G.connect(destination),
+    start(i*.06),
+    frequency.setValueAtTime(110*1.06**(13-D[i]),i*.06),type='square',
+    gain.setValueAtTime(1,i*.06),
+    gain.setTargetAtTime(.0001,i*.06+.04,.005),
+    stop(i*.06+.05)`;
+    eval(exp.value);
+}
+function bananaHit(){
+    if (A.state != "closed"){
+        A.close();
+    };
+    var exp = new Object;
+    exp.value = 
+    `with(new AudioContext)
+    with(G=createGain())
+    for(i in D=[18,17,15,18,17,20,22])
+    with(createOscillator())
+    if(D[i])
+    connect(G),
+    G.connect(destination),
+    start(i*.1),
+    frequency.setValueAtTime(110*1.06**(13-D[i]),i*.1),type='square',
+    gain.setValueAtTime(1,i*.1),
+    gain.setTargetAtTime(.0001,i*.1+.08,.005),
+    stop(i*.1+.09)`;
+    eval(exp.value);
+}
+*/
