@@ -8,7 +8,7 @@ Created by IBM (not Microsoft) in 1991 as a demonstration of QBASIC's explosive 
 ![](images/big.jpg)
 
 
-# [Demo](https://rdub80.github.io/gorilla.bas.vr/src)
+## [Demo](https://rdub80.github.io/gorilla.bas.vr/src)
  
 
 ### Special Thanks to 
@@ -18,8 +18,10 @@ Created by IBM (not Microsoft) in 1991 as a demonstration of QBASIC's explosive 
 - Brian Chirls (brian@datavized.com) his math support with parabolic curves
 
 
-Challenge: https://js13kgames.com/webxr
+### References
 
-JS version: https://tics.taxi/gorillas/
+The Challenge: > 13kb (my app has 7kb currently!) (https://js13kgames.com/webxr)[https://js13kgames.com/webxr]
 
-YouTube reference: https://www.youtube.com/watch?v=ncykt-YJO1M
+One JS version: (https://tics.taxi/gorillas/)[https://tics.taxi/gorillas/]
+
+Screencapture of the original game: (https://www.youtube.com/watch?v=ncykt-YJO1M)[https://www.youtube.com/watch?v=ncykt-YJO1M]
