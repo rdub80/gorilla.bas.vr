@@ -91,11 +91,11 @@ AFRAME.registerComponent('arena', {
 		{    
 			for(j = 0; j < arenaWidth; j++)
 		     {
-				// var buildingWidth = Math.floor(Math.random() * 5) + 5;
-				// var buildingDepth = Math.floor(Math.random() * 5) + 5;
-				// var buildingHeight = Math.floor(Math.random() * 10) + 15;
+				var buildingWidth = Math.floor(Math.random() * 5) + 5;
+				var buildingDepth = Math.floor(Math.random() * 5) + 5;
+				var buildingHeight = Math.floor(Math.random() * 10) + 15;
 
-                var buildingWidth = 9, buildingDepth = 9, buildingHeight = 0.5;
+                //var buildingWidth = 9, buildingDepth = 9, buildingHeight = 0.5;
 
 				var buildingColor = buildingColors[Math.floor(Math.random() * 3)];
 

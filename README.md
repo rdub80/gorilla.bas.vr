@@ -3,12 +3,23 @@
 
 Created by IBM (not Microsoft) in 1991 as a demonstration of QBASIC's explosive banana capabilities. This game came with every installation of MS-DOS 5.
 
-https://js13kgames.com/webxr
+![](images/small.jpg)
 
-JS version
+![](images/big.jpg)
 
-https://tics.taxi/gorillas/
 
-YouTube
+# [Demo](https://rdub80.github.io/gorilla.bas.vr/src)
+ 
 
-https://www.youtube.com/watch?v=ncykt-YJO1M
+### Special Thanks to 
+
+- Jeff McFadden his musical support with the oscillator
+
+- Brian Chirls his math support with parabolic curves
+
+
+Challenge: https://js13kgames.com/webxr
+
+JS version: https://tics.taxi/gorillas/
+
+YouTube reference: https://www.youtube.com/watch?v=ncykt-YJO1M
