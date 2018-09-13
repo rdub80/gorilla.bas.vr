@@ -19,7 +19,7 @@
 
 <!-- Loading Progress -->
   <div id="intro" class="overlay">
-    <h1>A-QBASIC GORILLAS</h1>
+    <h1>A-FRAME GORILLAS</h1>
     <p>STARRING:</p>
     <p><input id="p1name" type="text" value="Player1"> AND <input id="p2name" type="text" value="Player2"></p>
     <p><img src="images/ani.gif" width="320px"></p>
@@ -80,7 +80,12 @@
     var intro = document.querySelector("#intro");
     intro.style.display = "block";
 
+    var _p1n = document.getElementById("p1name");
+    var _p2n = document.getElementById("p2name");
+
+
     function removeLandingScreen() {
+        applyPlayernames(_p1n.value, _p2n.value);
         var intro = document.querySelector("#intro");
         var scene = document.querySelector("a-scene");
 

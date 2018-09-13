@@ -3,6 +3,17 @@ if (typeof AFRAME === 'undefined') {
   throw new Error('Component attempted to register before AFRAME was available.');
 }
 
+Element.prototype.remove = function() {
+    this.parentElement.removeChild(this);
+}
+NodeList.prototype.remove = HTMLCollection.prototype.remove = function() {
+    for(var i = this.length - 1; i >= 0; i--) {
+        if(this[i] && this[i].parentElement) {
+            this[i].parentElement.removeChild(this[i]);
+        }
+    }
+}
+
 /* 
 p0 (Initial position) is the initial position of the projectile.
 v0 (Initial speed) is the speed at p0. Defined by the user, the higher the speed the further the distance.
@@ -285,17 +296,35 @@ AFRAME.registerComponent('gorilla', {
     }
 });
 
+
+var player_1 = "Player1";
+var player_2 = "Player2";
+
+function applyPlayernames(p1, p2) {
+    player_1 = p1;
+    player_2 = p2;
+
+    document.getElementById("p1n").textContent = player_1;
+    document.getElementById("p2n").textContent = player_2;
+    document.querySelector('#p1').children["0"].setAttribute('gorilla', player_1);
+    document.querySelector('#p2').children["0"].setAttribute('gorilla', player_2);
+}
+
+
 AFRAME.registerComponent('collidable', {
     init: function () {
+        var el = this.el;
+        var id = this.id = this.el.id;
         var sphere = this.sphere = document.createElement('a-sphere');
         sphere.setAttribute('radius','0.01');
         sphere.setAttribute('color', `${colorObj.marroon}`);
-        this.el.appendChild(sphere); 
+        el.appendChild(sphere); 
     },
     tick: function () {
         var banana = document.querySelector('[banana]');
+        var el = this.el;
         if(bananaInFlight){
-            var dist = getDistance(this.el.object3D.position, banana.object3D.position);
+            var dist = getDistance(el.object3D.position, banana.object3D.position);
             console.log(dist);
             if (dist < 2.5){          
                 this.blow();
@@ -303,11 +332,24 @@ AFRAME.registerComponent('collidable', {
         }
     },
     blow: function () {
-        console.log("Booooom");
+        var looserid = this.id
+        console.log("Booooom " + looserid);
         bananaInFlight = false;
         this.sphere.setAttribute('radius','4');
+        setTimeout(results.bind(null, looserid), 500);
     }
 });
+
+function results(id) {
+    if(id = 'p1'){ 
+        document.getElementById("p2n").textContent = player_2 + " WINS !!!";
+        startParty('#p2');
+    }else{
+        document.getElementById("p1n").textContent = player_1 + " WINS !!!";
+        startParty('#p1');        
+    }
+    document.getElementById(id).setAttribute('scale', '0.001 0.001 0.001');
+}
 
 AFRAME.registerComponent('init', {
   init: function () {
