@@ -50,9 +50,12 @@ function getDistance(mesh1, mesh2) {
 }
 
 /* ColorObj */
-var colorObj = {black: '#000', white: '#fff',yellow: '#ff0',skin: '#fa5',blue: '#00b', grey: '#555'};
+var colorObj = {black: '#000', white: '#fff',yellow: '#ff0',skin: '#fa5',blue: '#00b', grey: '#555', marroon: '#a00'};
 // light: '#aaa' cyan: '#0aa' marroon: '#a00'
 var buildingColors = ["#aaa", "#0aa", "#a00"], player2Position = [], player1Position = [];
+
+var turnP1 = true; // turn  of Player 1
+var bananaInFlight = false;
 
 
 AFRAME.registerComponent('arena', {
@@ -174,7 +177,6 @@ AFRAME.registerComponent('sun', {
 AFRAME.registerComponent('banana', {
     init: function () {
         var sun = this.sun = document.querySelector('[sun]');
-        var gorillas = this.gorillas = document.querySelectorAll('[gorilla]');
         var targetEl = this.el;  
         var thebanana = document.createElement("a-entity");
         thebanana.setAttribute('scale', `0.8 1 1`);
@@ -196,81 +198,10 @@ AFRAME.registerComponent('banana', {
             thebanana.appendChild(b);
         }
     },
-    update: function () {
-    },
     tick: function () {
         var sunBananaDist = getDistance(this.el.object3D.getWorldPosition(), this.sun.object3D.getWorldPosition());
         if (sunBananaDist < 3){ this.sun.setAttribute('sun','hit',true) }        
-        
-        for (i = 0; i < this.gorillas.length; i++) { 
-            var gorillaBananaDist = getDistance(this.el.object3D.getWorldPosition(), this.gorillas[i].object3D.getWorldPosition());
-            if (gorillaBananaDist < 3){ console.log('hitting a gorilla'); }        
-        }
-
-
-    },
-    remove: function () {
-    },
-    miss: function () {
-        if (A.state != "closed"){
-            A.close();
-        };
-        var exp = new Object;
-        exp.value = 
-        `with(new AudioContext)
-        with(G=createGain())
-        for(i in D=[18,17,15,18,17,20,22])
-        with(createOscillator())
-        if(D[i])
-        connect(G),
-        G.connect(destination),
-        start(i*.05),
-        frequency.setValueAtTime(110*1.06**(13-D[i]),i*.05),type='square',
-        gain.setValueAtTime(1,i*.05),
-        gain.setTargetAtTime(.0001,i*.05+.03,.005),
-        stop(i*.05+.04)`;
-        eval(exp.value);
-    },
-    hit: function () {
-        if (A.state != "closed"){
-            A.close();
-        };
-        var exp = new Object;
-        exp.value = 
-        `with(new AudioContext)
-        with(G=createGain())
-        for(i in D=[18,17,15,18,17,20,22])
-        with(createOscillator())
-        if(D[i])
-        connect(G),
-        G.connect(destination),
-        start(i*.1),
-        frequency.setValueAtTime(110*1.06**(13-D[i]),i*.1),type='square',
-        gain.setValueAtTime(1,i*.1),
-        gain.setTargetAtTime(.0001,i*.1+.08,.005),
-        stop(i*.1+.09)`;
-        eval(exp.value);
-    },
-    throw: function () {
-        if (A.state != "closed"){
-            A.close();
-        };
-        var exp = new Object;
-        exp.value = 
-        `with(G=createGain())
-        for(i in D=[23,13,11])
-        with(createOscillator())
-        if(D[i])
-        connect(G),
-        G.connect(destination),
-        start(i*.06),
-        frequency.setValueAtTime(110*1.06**(13-D[i]),i*.06),type='square',
-        gain.setValueAtTime(1,i*.06),
-        gain.setTargetAtTime(.0001,i*.06+.04,.005),
-        stop(i*.06+.05)`;
-        eval(exp.value);
     }
-
 });
 
 AFRAME.registerComponent('gorilla', {
@@ -345,7 +276,7 @@ AFRAME.registerComponent('gorilla', {
         if(data != ''){
             var playerName = document.createElement("a-entity");
             playerName.setAttribute('geometry', `primitive: plane; width: 10; height: 3`);
-            playerName.setAttribute('material', `color: ${colorObj.white}`);
+            playerName.setAttribute('material', `color: ${colorObj.white}; shader: flat`);
             playerName.setAttribute('text', `value: ${data}; color: ${colorObj.black}; align:center;wrapCount:10`);
             playerName.setAttribute('position', `0 15 0`);
             targetEl.appendChild(playerName);
@@ -354,10 +285,37 @@ AFRAME.registerComponent('gorilla', {
     }
 });
 
+AFRAME.registerComponent('collidable', {
+    init: function () {
+        var sphere = this.sphere = document.createElement('a-sphere');
+        sphere.setAttribute('radius','0.01');
+        sphere.setAttribute('color', `${colorObj.marroon}`);
+        this.el.appendChild(sphere); 
+    },
+    tick: function () {
+        var banana = document.querySelector('[banana]');
+        if(bananaInFlight){
+            var dist = getDistance(this.el.object3D.position, banana.object3D.position);
+            console.log(dist);
+            if (dist < 2.5){          
+                this.blow();
+            }
+        }
+    },
+    blow: function () {
+        console.log("Booooom");
+        bananaInFlight = false;
+        this.sphere.setAttribute('radius','4');
+    }
+});
 
 AFRAME.registerComponent('init', {
   init: function () {
     var sceneEl = this.el;
+
+    var camP1 = document.querySelector('#p1Cam');
+    var camP2 = document.querySelector('#p2Cam');
+    var camOverview = document.querySelector('#overviewCam');
 
     var player1 = document.querySelector('#p1');
     var player2 = document.querySelector('#p2');
@@ -394,62 +352,137 @@ AFRAME.registerComponent('init', {
     banana.setAttribute('banana','');
     sceneEl.appendChild(banana); 
 
+    //game setup
+    function setStartPositions() {
+        var startPosP1 = player1Position[Math.floor(Math.random()*player1Position.length)];
+        var startPosP2 = player2Position[Math.floor(Math.random()*player2Position.length)];
+        
+        var transP1 = new THREE.Vector3(startPosP1.xPos,startPosP1.yPos,startPosP1.zPos);
+        var transP2 = new THREE.Vector3(startPosP2.xPos,startPosP2.yPos,startPosP2.zPos);
+        p1Pos.add(transP1);
+        p2Pos.add(transP2);
 
-    //interaction
-    var turnP1 = true;
-    var keyCount = 0;
-    document.addEventListener("keydown", function(event) {
-        if(event.keyCode == 32){
-            keyCount++;
-            if(turnP1){
-                document.querySelector('#p1Cam').setAttribute('camera', 'active', keyCount % 2 === 0 ? false : true);
-            }else{
-                document.querySelector('#p2Cam').setAttribute('camera', 'active', keyCount % 2 === 0 ? false : true);
+        player1.setAttribute('position', p1Pos);
+        player2.setAttribute('position', p2Pos);
+
+        shooter.setAttribute('position', startPosP1.xPos + " " + (startPosP1.yPos+1.5) + " " + startPosP1.zPos);
+        
+        banana.setAttribute('position', p1Pos);
+
+        console.log("startPos- enemy:" + startPosP2.xPos + " " + startPosP2.yPos + " " + startPosP2.zPos + " | my_gorilla:" + startPosP1.xPos + " " + startPosP1.yPos + " " + startPosP1.zPos + " | shooter:" + startPosP1.xPos + " " + (startPosP1.yPos+1.5) + " " + startPosP1.zPos);
+    }
+    setStartPositions();
+
+    function toggleForms() {
+        var containers = document.getElementsByTagName('aside');
+        var elemsP1 = document.getElementsByClassName('p1i');
+        var elemsP2 = document.getElementsByClassName('p2i');
+        if(turnP1){
+            for(i=0; i<elemsP1.length; i++) {
+                elemsP1[i].removeAttribute("disabled");
+            }
+            for(i=0; i<elemsP2.length; i++) {
+                elemsP2[i].setAttribute("disabled","disabled");
+            }
+        }else{
+            for(i=0; i<elemsP2.length; i++) {
+                elemsP2[i].removeAttribute("disabled");
+            }
+            for(i=0; i<elemsP1.length; i++) {
+                elemsP1[i].setAttribute("disabled","disabled");
             }
         }
-        if(event.keyCode == 37){ //left arrow
+
+        for(i=0; i<containers.length; i++) {
+            containers[i].classList.toggle("active");
+        }
+
+    }
+    toggleForms();
+
+    //interaction
+
+    var keyCount = 0;
+    function toggleCam() {
+        keyCount++;
+        if(turnP1){
+            camP1.setAttribute('camera', 'active', keyCount % 2 === 0 ? false : true);
+            camOverview.setAttribute('camera', 'active', keyCount % 2 === 0 ? true : false);
+        }else{
+            camP2.setAttribute('camera', 'active', keyCount % 2 === 0 ? false : true);
+            camOverview.setAttribute('camera', 'active', keyCount % 2 === 0 ? true : false);
+        }
+    }
+
+    function setToOverview(){
+        setTimeout(function(){ 
+            if(keyCount % 2){
+                toggleCam();
+            }
+        }, 700);        
+    }
+
+
+    function playerSwitch() {
+        turnP1 = !turnP1;
+        toggleForms();
+        
+        setTimeout(function(){ 
+            if(turnP1){
+                banana.setAttribute('position', p1Pos);
+            }else{
+                banana.setAttribute('position', p2Pos);
+            }
+        }, 500);
+    }
+
+    document.addEventListener("keydown", function(event) {
+        if(event.keyCode == 86){ //key V
+            toggleCam();
+        }
+        if(event.keyCode == 65){ //key A
             if(turnP1){
                 shotRotP1.value++;
             }else{
                 shotRotP2.value++;
             }
         }
-        if(event.keyCode == 39){ //right arrow
+        if(event.keyCode == 68){ //key D
             if(turnP1){
                 shotRotP1.value--;
             }else{
                 shotRotP2.value--;
             }
         }
-        if(event.keyCode == 38){ //up arrow
+        if(event.keyCode == 87){ //key W
             if(turnP1){
                 shotAngP1.value++;
             }else{
                 shotAngP2.value++;
             }
         }
-        if(event.keyCode == 40){ //down arrow
+        if(event.keyCode == 83){ //key S
             if(turnP1){
                 shotAngP1.value--;
             }else{
                 shotAngP2.value--;
             }
         }
-        if(event.keyCode == 187){ //plus
+        if(event.keyCode == 88){ //key X
             if(turnP1){
                 shotVelP1.value++;
             }else{
                 shotVelP2.value++;
             }
         }
-        if(event.keyCode == 189){ //minus
+        if(event.keyCode == 90){ //key Z
             if(turnP1){
                 shotVelP1.value--;
             }else{
                 shotVelP2.value--;
             }
         }
-        if(event.keyCode == 13){ //enter
+        if(event.keyCode == 84){ //Key T
             setThrow(shooter);
         }
         updatePlayer();
@@ -459,8 +492,62 @@ AFRAME.registerComponent('init', {
         setThrow(shooter);
     });
     document.getElementById("playP2").addEventListener("click", function(event) {
-        //setThrow(shooter);
+        setThrow(shooter);
     });
+    document.getElementById("togglecam").addEventListener("click", function(event) {
+        toggleCam();
+    });    
+
+    document.getElementById("p1RotPlus").addEventListener("click", function(event) { 
+        shotRotP1.value++; 
+        updatePlayer(); 
+    });    
+    document.getElementById("p1RotMinus").addEventListener("click", function(event) { 
+        shotRotP1.value--; 
+        updatePlayer(); 
+    });  
+    document.getElementById("p1AngPlus").addEventListener("click", function(event) { 
+        shotAngP1.value++; 
+        updatePlayer(); 
+    });  
+    document.getElementById("p1AngMinus").addEventListener("click", function(event) { 
+        shotAngP1.value--; 
+        updatePlayer(); 
+    });  
+    document.getElementById("p1VelPlus").addEventListener("click", function(event) { 
+        shotVelP1.value++; 
+        updatePlayer(); 
+    });  
+    document.getElementById("p1VelMinus").addEventListener("click", function(event) { 
+        shotVelP1.value--; 
+        updatePlayer(); 
+    });  
+
+    document.getElementById("p2RotPlus").addEventListener("click", function(event) { 
+        shotRotP2.value++; 
+        updatePlayer(); 
+    });     
+    document.getElementById("p2RotMinus").addEventListener("click", function(event) { 
+        shotRotP2.value--; 
+        updatePlayer(); 
+    });  
+    document.getElementById("p2AngPlus").addEventListener("click", function(event) { 
+        shotAngP2.value++; 
+        updatePlayer(); 
+    });  
+    document.getElementById("p2AngMinus").addEventListener("click", function(event) { 
+        shotAngP2.value--; 
+        updatePlayer(); 
+    });  
+    document.getElementById("p2VelPlus").addEventListener("click", function(event) { 
+        shotVelP2.value++; 
+        updatePlayer(); 
+    });  
+    document.getElementById("p2VelMinus").addEventListener("click", function(event) { 
+        shotVelP2.value--; 
+        updatePlayer(); 
+    });  
+
 
     shotRotP1.addEventListener("change", function(event) {
       updatePlayer();
@@ -481,50 +568,35 @@ AFRAME.registerComponent('init', {
       updatePlayer();
     });
 
+
+    var p2RotAdjust = 180;
     function updatePlayer(){
         if(turnP1){
             force = shotVelP1.value;
+            shooter.setAttribute('position', p1Pos);
             shooter.setAttribute('rotation', shotAngP1.value + ' ' + shotRotP1.value + ' 0');
-            p1.setAttribute('rotation', '0 ' + shotRotP1.value + ' 0');
-
-            var initialVelocity = shotVelP1.value;            
-            var gravity = 9.8;
-            var shotAngle = shotAngP1.value;
-            var shooterHeight = shooter.object3D.getWorldPosition().y;
-            var groundHeight = 0;
-
-            console.log("hit time estimate: " + hitTimeTaken(initialVelocity, gravity, shotAngle, shooterHeight, groundHeight));
-            console.log(shooterHeight);
+            player1.setAttribute('rotation', '0 ' + shotRotP1.value + ' 0');
         }else{
             force = shotVelP2.value;
-            //shooter.setAttribute('rotation', shotAngP2.value + ' ' + shotRotP2.value + ' 0');
-            p2.setAttribute('rotation', '0 ' + shotRotP2.value + ' 0');
+            var yRot = parseInt(shotRotP2.value) + p2RotAdjust;
+            shooter.setAttribute('position', p2Pos);
+            shooter.setAttribute('rotation', shotAngP2.value + ' ' + yRot + ' 0');
+            player2.setAttribute('rotation', '0 ' + shotRotP2.value + ' 0');
         }      
     }
 
-    //game setup
-    function setStartPositions() {
-        var startPosP1 = player1Position[Math.floor(Math.random()*player1Position.length)];
-        var startPosP2 = player2Position[Math.floor(Math.random()*player2Position.length)];
-        
-        var transP1 = new THREE.Vector3(startPosP1.xPos,startPosP1.yPos,startPosP1.zPos);
-        var transP2 = new THREE.Vector3(startPosP2.xPos,startPosP2.yPos,startPosP2.zPos);
-        p1Pos.add(transP1);
-        p2Pos.add(transP2);
-
-        p1.setAttribute('position', p1Pos);
-        p2.setAttribute('position', p2Pos);
-
-        shooter.setAttribute('position', startPosP1.xPos + " " + (startPosP1.yPos+1.5) + " " + startPosP1.zPos);
-
-        console.log("startPos- enemy:" + startPosP2.xPos + " " + startPosP2.yPos + " " + startPosP2.zPos + " | my_gorilla:" + startPosP1.xPos + " " + startPosP1.yPos + " " + startPosP1.zPos + " | shooter:" + startPosP1.xPos + " " + (startPosP1.yPos+1.5) + " " + startPosP1.zPos);
-    }
-    setStartPositions();
-
     //throw action
-
     function setThrow(shooterobj){
-    
+
+        console.log("turnP1 " + turnP1);
+        bananaThrow();
+        setToOverview();        
+        
+        setTimeout(function(){ 
+            bananaInFlight = true;
+            console.log('incoming');
+        }, 500);
+
         var initTime = Date.now(); // milliseconds
         var shotDirection = new THREE.Vector3();
         shotDirection.set(0, 0, -1)
@@ -535,17 +607,16 @@ AFRAME.registerComponent('init', {
         v0.copy(shotDirection).multiplyScalar(force);
 
         var p0 = shooterobj.object3D.getWorldPosition(); // start position
-        var pF = p2.object3D.getWorldPosition(); // enemy position
         var gravityVector = new THREE.Vector3(0, G, 0);
 
 
         function setSpherePosition(t) {
             parabolicCurve(p0, v0, gravityVector, t, out);
 
-    //trace
+        //trace
             var b = document.createElement('a-sphere');
-            b.setAttribute('radius', '0.05');
-            b.setAttribute('color', '#fff');
+            b.setAttribute('radius', '0.075');
+            b.setAttribute('material', 'color:#fff; shader:flat');
             b.setAttribute('position', out);
             sceneEl.appendChild(b); 
 
@@ -565,17 +636,21 @@ AFRAME.registerComponent('init', {
           var t = sinceStart % ANIM_LENGTH; // ms
           var seconds = t / 1000;
           
-          var dist = getDistance(pF, out);
           setSpherePosition(seconds);
           
-          if (sinceStart < ANIM_LENGTH && dist > 0.5){ // if ANIM_LENGTH not met yet and dist larger then 0.5 
-            throwAni = requestAnimationFrame(throwIt);
-          }
-          if (dist < 0.5){
-            cancel_animation();
-            console.log("hit");
-            //requestAnimationFrame(blow);
-          }
+            if (sinceStart < ANIM_LENGTH && banana.object3D.position.y > 0){ // if ANIM_LENGTH not met yet and dist larger then 0.5 
+                throwAni = requestAnimationFrame(throwIt);
+                console.log("flight");
+            }else{
+                console.log("player switch");
+                bananaInFlight = false;
+                playerSwitch();
+
+            }
+            if (banana.object3D.position.y < 0){ // if ANIM_LENGTH not met yet and dist larger then 0.5 
+                console.log("ground");
+                armSound();
+            }
         }
 
         function run_animation() {
@@ -586,26 +661,6 @@ AFRAME.registerComponent('init', {
         }
         run_animation();
     }
-
-
-    // var start = null;
-    // var DUR = 300;
-    // function blow(timestamp) {
-    //   if (!start) start = timestamp;
-    //   var progress = timestamp - start;
-    //   enemy.setAttribute('scale', '0 0 0');
-    //   var scalerate = (Math.round( Math.sin( (timestamp % start)/DUR * Math.PI) * 100) / 100) * 10 ;
-    //   console.log("progress: " + scalerate);
-    //   banana.setAttribute('color', 'red');
-    //   banana.setAttribute('scale', scalerate + ' ' + scalerate + ' ' + scalerate );
-      
-    //   if (progress < DUR) {
-    //     requestAnimationFrame(blow); 
-    //   }
-    // }
-
-
-
 
  }
 }); //init
@@ -668,6 +723,10 @@ function introsong(){
     eval(exp.value);
 }
 
+setTimeout(function(){ 
+    introsong();
+}, 1000)
+
 function armSound() {
     if (A.state != "closed"){
         A.close();
@@ -689,14 +748,15 @@ function armSound() {
     eval(exp.value);
 }
 
-/*
+
 function bananaThrow() {
     if (A.state != "closed"){
         A.close();
     };
     var exp = new Object;
     exp.value = 
-    `with(G=createGain())
+    `with(new AudioContext)
+    with(G=createGain())
     for(i in D=[23,13,11])
     with(createOscillator())
     if(D[i])
@@ -709,6 +769,7 @@ function bananaThrow() {
     stop(i*.06+.05)`;
     eval(exp.value);
 }
+
 function bananaHit(){
     if (A.state != "closed"){
         A.close();
@@ -729,4 +790,17 @@ function bananaHit(){
     stop(i*.1+.09)`;
     eval(exp.value);
 }
+/*
+
+
+
+    var initialVelocity = shotVelP1.value;            
+    var gravity = 9.8;
+    var shotAngle = shotAngP1.value;
+    var shooterHeight = shooter.object3D.getWorldPosition().y;
+    var groundHeight = 0;
+
+    console.log("hit time estimate: " + hitTimeTaken(initialVelocity, gravity, shotAngle, shooterHeight, groundHeight));
+    console.log(shooterHeight);
+
 */
