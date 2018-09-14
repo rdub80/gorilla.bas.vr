@@ -20,8 +20,8 @@ Created by IBM (not Microsoft) in 1991 as a demonstration of QBASIC's explosive 
 
 ### References
 
-The Challenge: > 13kb (my app has 7kb currently!) (https://js13kgames.com/webxr)[https://js13kgames.com/webxr]
+The Challenge: > 13kb (my app has 7kb currently!) https://js13kgames.com/webxr
 
-One JS version: (https://tics.taxi/gorillas/)[https://tics.taxi/gorillas/]
+One JS version: https://tics.taxi/gorillas/
 
-Screencapture of the original game: (https://www.youtube.com/watch?v=ncykt-YJO1M)[https://www.youtube.com/watch?v=ncykt-YJO1M]
+Screencapture of the original game: https://www.youtube.com/watch?v=ncykt-YJO1M
